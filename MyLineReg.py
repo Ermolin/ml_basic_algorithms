@@ -1,4 +1,3 @@
-from sklearn.datasets import make_regression
 import pandas as pd
 import numpy as np
 
@@ -9,12 +8,18 @@ class MyLineReg():
             learning_rate: float = 0.5,
             metric: str = None,
             weights: np.array = None,
-            metric_value: float = None
+            metric_value: float = None,
+            reg: str = None,
+            l1_coef: float = None,
+            l2_coef: float = None
     ):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
         self.metric = metric
         self.metric_value = metric_value
+        self.reg = reg
+        self.l1_coef = l1_coef
+        self.l2_coef = l2_coef
 
     def __str__(self):
         return f'MyLineReg class: n_iter={self.n_iter}, learning_rate={self.learning_rate}'
@@ -77,18 +82,36 @@ class MyLineReg():
         part_errors = np.abs(errors / y)
         return 100 * sum(part_errors)/len(y)
 
+    def REGULARISATION(
+            self,
+            W: np.array,
+    ):
+        '''
+        calculate regularisation
+        '''
+        if self.reg == 'l1':
+            return np.sign(W) * self.l1_coef
+        elif self.reg == 'l2':
+            return (W * 2)  * self.l2_coef 
+        elif self.reg == 'elasticnet':
+            return (np.sign(W) * self.l1_coef) + ((W * 2)  * self.l2_coef )
+        else:
+            return np.zeros(len(W))
+
     def ANTIGRADIENT(
             self,
             y: np.array, # Series with real values
             y_cap : np.array, # Series with predicted values
             X: np.array, # df with features
+            W: np.array,
         ):
         '''
         calculate antigradient
         '''
         errors = y_cap-y
         errors_df = errors * X.transpose()
-        antigradient = - (errors_df.sum(axis=1) / X.shape[0] )*2
+        #antigradient = - (errors_df.sum(axis=1) / X.shape[0] )*2
+        antigradient = (- (errors_df.sum(axis=1) / X.shape[0] )*2) - self.REGULARISATION(W=W)
         return antigradient
 
     def calc_error(
@@ -128,6 +151,7 @@ class MyLineReg():
 
         # initiating weights array
         W = np.ones(len(list(X.columns))+1)
+        self.weights = W
         # add w0 for X0 as array of 1
         # change types to np.array
         feats = list(X.columns)
@@ -145,7 +169,8 @@ class MyLineReg():
 
             antigradient = self.ANTIGRADIENT(y=y,
                                         y_cap=y_cap,
-                                        X=X)
+                                        X=X,
+                                        W=W)
 
             W = W + (antigradient* self.learning_rate)
             self.weights = W
@@ -185,3 +210,4 @@ class MyLineReg():
                        self
                       ):
         return self.metric_value
+   
