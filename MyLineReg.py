@@ -7,7 +7,7 @@ class MyLineReg():
             self,
             n_iter: int = 10,
             learning_rate: float = 0.5,
-            weights = None
+            weights: np.array = None
     ):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
@@ -29,9 +29,9 @@ class MyLineReg():
 
     def ANTIGRADIENT(
             self,
-            y: pd.Series, # Series with real values
-            y_cap : pd.Series, # Series with predicted values
-            X: pd.DataFrame, # df with features
+            y: np.array, # Series with real values
+            y_cap : np.array, # Series with predicted values
+            X: np.array, # df with features
         ):
         '''
         calculate antigradient
@@ -43,19 +43,22 @@ class MyLineReg():
 
     def fit(
             self,
-            X: pd.DataFrame, # df with features
-            y: pd.Series, # Series with real values
+            X: np.array, # df with features
+            y: np.array, # Series with real values
             verbose: int = None
             ):
         '''
         fit the model'''
-        # add w0 for X0 as array of 1
-        feats = list(X.columns)
-        X['x0']=1
-        X=X[['x0']+feats]
 
         # initiating weights array
-        W = np.ones(len(list(X.columns)))
+        W = np.ones(len(list(X.columns))+1)
+        # add w0 for X0 as array of 1
+        # change types to np.array
+        feats = list(X.columns)
+        X['x0']=1
+        X=np.array(X[['x0']+feats])
+        y= np.array(y)
+
 
         for i in range(self.n_iter):
             X_vals =X*W
@@ -83,3 +86,14 @@ class MyLineReg():
         return weights except w0 representing 
         '''
         return np.array(self.weights[1:])
+
+    def predict(
+                self,
+                X: pd.DataFrame, # df with features
+                ):
+        W = self.weights
+        feats = list(X.columns)
+        X['x0']=1
+        X=X[['x0']+feats]
+        X=np.array(X)
+        return pd.Series((X*W).sum(axis=1))
