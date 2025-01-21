@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import random
 
 
 from typing import Callable, Union, List
@@ -14,7 +15,9 @@ class MyLineReg():
             metric_value: float = None,
             reg: str = None,
             l1_coef: float = None,
-            l2_coef: float = None
+            l2_coef: float = None,
+            sgd_sample: Union[float,int] = None, # size of batch for Stochastic Gradient Sample
+            random_state: int = 42
     ):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
@@ -23,6 +26,8 @@ class MyLineReg():
         self.reg = reg
         self.l1_coef = l1_coef
         self.l2_coef = l2_coef
+        self.sgd_sample = sgd_sample
+        self.random_state = random_state
 
     def __str__(self):
         return f'MyLineReg class: n_iter={self.n_iter}, learning_rate={self.learning_rate}'
@@ -143,6 +148,23 @@ class MyLineReg():
         else:
             return None
 
+    def SGS(self,
+            X: np.array, # df with features
+            #y: np.array, # Series with real values
+            ): #Stochastic Gradient Sample
+        
+        if isinstance(self.sgd_sample, float):
+            sample_size = int(X.shape[0]*self.sgd_sample)
+        elif isinstance(self.sgd_sample, int):
+            sample_size = self.sgd_sample
+        else:
+            sample_size = X.shape[0]
+        
+        sample_rows_idx = random.sample(range(X.shape[0]),sample_size)
+
+        return sample_rows_idx
+        
+
     def fit(
             self,
             X: np.array, # df with features
@@ -151,6 +173,8 @@ class MyLineReg():
             ):
         '''
         fit the model'''
+        # fix random seed
+        random.seed(self.random_state)
 
         # initiating weights array
         W = np.ones(len(list(X.columns))+1)
@@ -169,6 +193,8 @@ class MyLineReg():
             self.learning_rate = lambda x: value
 
         for i in range(self.n_iter):
+            
+            subset_indexes = self.SGS(X=X) #,y=y)
 
             LR = self.learning_rate(i + 1) # make start iters for lambda from 1 to N
 
@@ -178,9 +204,9 @@ class MyLineReg():
             mse = self.MSE(y=y,
                       y_cap=y_cap)
 
-            antigradient = self.ANTIGRADIENT(y=y,
-                                        y_cap=y_cap,
-                                        X=X,
+            antigradient = self.ANTIGRADIENT(y=y[subset_indexes],
+                                        y_cap=y_cap[subset_indexes],
+                                        X=X[subset_indexes],
                                         W=W)
 
             W = W + (antigradient * LR)
