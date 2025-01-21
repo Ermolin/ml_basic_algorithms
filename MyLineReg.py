@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
 
+
+from typing import Callable, Union, List
+
 class MyLineReg():
     def __init__(
             self,
             n_iter: int = 10,
-            learning_rate: float = 0.5,
+            learning_rate: Union[float, Callable[[float],float]] = 0.5, 
             metric: str = None,
             weights: np.array = None,
             metric_value: float = None,
@@ -160,7 +163,15 @@ class MyLineReg():
         y= np.array(y)
 
 
+        # make all learning_rates lambda funcs
+        if isinstance(self.learning_rate, float):
+            value = self.learning_rate
+            self.learning_rate = lambda x: value
+
         for i in range(self.n_iter):
+
+            LR = self.learning_rate(i + 1) # make start iters for lambda from 1 to N
+
             X_vals =X*W
             y_cap = X_vals.sum(axis=1)
 
@@ -172,7 +183,7 @@ class MyLineReg():
                                         X=X,
                                         W=W)
 
-            W = W + (antigradient* self.learning_rate)
+            W = W + (antigradient * LR)
             self.weights = W
 
             self.metric_value = self.calc_error(y=y,y_cap=y_cap)
