@@ -135,18 +135,35 @@ class MyLogReg():
             
             W = W + (antigradient * LR)
             self.weights = W
-
-            #self.metric_value = self.calc_error(y=y,y_cap=y_cap)
-
-            # if verbose : #and self.metric :
-            #     if i == 0:
-            #         print(f'start | loss: {logloss} | {self.metric} : {self.metric_value}') 
-                
-            #     elif (i+1) % verbose == 0:
-            #         print(f'{i} | loss: {logloss} | {self.metric} : {self.metric_value}') 
         
     def get_coef(self):
         '''
         return weights except w0 representing 
         '''
         return np.array(self.weights[1:]) 
+    
+    def predict_proba(self,
+                      X: pd.DataFrame):
+        '''
+        predict probabilities
+        '''
+        #prep matrix
+        X=np.array(X)
+
+        #X_vals =X*self.weights
+        #y_cap = 1 / (1+np.e ** (-X_vals.sum(axis=1)))
+        y_cap = 1 / (1 + np.exp(- self.weights @ X.T))
+        return y_cap
+    
+    def predict(self,
+                X: pd.DataFrame,
+                threshold: float = 0.5):
+        '''
+        predict classes
+        '''
+        # feats = list(X.columns)
+        # X['x0']=1
+        # X = X[['x0']+feats]
+
+        y_cap = self.predict_proba(X=X)
+        return np.where(y_cap>threshold,1,0)
