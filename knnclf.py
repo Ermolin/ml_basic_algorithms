@@ -7,12 +7,14 @@ class MyKNNClf():
             self,
             k: int = 3,
             metric: str = 'euclidean',
+            weight: str = 'uniform',
     ):
         self.k = k
         self.train_size: tuple[int, int] = None
         self.X: pd.DataFrame = None
         self.y: pd.Series = None
         self.metric = metric
+        self.weight = weight
 
     def __str__(self):
         return f'MyKNNClf class: k={self.k}'
@@ -64,15 +66,52 @@ class MyKNNClf():
     def predict_proba(self,
                       X: pd.DataFrame,
                       ):
-        y_pred = []
-        for i in range(X.shape[0]):
-            dist = []
-            for j in range(self.train_size[0]):
-                dist.append(self.calc_metric(X.iloc[i,:],self.X.iloc[j,:]))
-            dist = np.array(dist)
-            idx = dist.argsort()  
-            y_pred.append(np.mean(self.y.iloc[idx][:self.k]))
-        return np.array(y_pred)
+        if self.weight == 'uniform':
+            y_pred = []
+            for i in range(X.shape[0]):
+                dist = []
+                for j in range(self.train_size[0]):
+                    dist.append(self.calc_metric(X.iloc[i,:],self.X.iloc[j,:]))
+                dist = np.array(dist)
+                idx = dist.argsort()  
+                y_pred.append(np.mean(self.y.iloc[idx][:self.k]))
+            return np.array(y_pred)
+
+        elif self.weight == 'rank':
+            y_pred = []
+            for i in range(X.shape[0]):
+                dist = []
+                for j in range(self.train_size[0]):
+                    dist.append(self.calc_metric(X.iloc[i,:],self.X.iloc[j,:]))
+                dist = np.array(dist)
+                idx = dist.argsort()
+
+                y_pred_i_top = 0
+                y_pred_i_bot = 0
+                for j in range(self.k):
+                    y_pred_i_top += self.y.iloc[idx[j]]/(j+1) # 1&0 classes only, no need to multiply by y class
+                    y_pred_i_bot += 1/(j+1)
+                y_pred.append(np.sum(y_pred_i_top)/np.sum(y_pred_i_bot))
+
+            return np.array(y_pred)
+            
+        elif self.weight == 'distance':
+            y_pred = []
+            for i in range(X.shape[0]):
+                dist = []
+                for j in range(self.train_size[0]):
+                    dist.append(self.calc_metric(X.iloc[i,:],self.X.iloc[j,:]))
+                dist = np.array(dist)
+                idx = dist.argsort()
+
+                y_pred_i_top = 0
+                y_pred_i_bot = 0
+                for j in range(self.k):
+                    y_pred_i_top += 1*self.y.iloc[idx[j]]/dist[idx[j]] # *self.y.iloc[idx[j]] for making it 0 for class 0
+                    y_pred_i_bot += 1/dist[idx[j]]
+                y_pred.append(np.sum(y_pred_i_top)/np.sum(y_pred_i_bot))
+
+            return np.array(y_pred)
     
     def predict(self,
                 X: pd.DataFrame,
