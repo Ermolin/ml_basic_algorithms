@@ -148,6 +148,9 @@ class MyLogReg():
         predict probabilities
         '''
         #prep matrix
+        feats = list(X.columns)
+        X['x0']=1
+        X = X[['x0']+feats]
         X=np.array(X)
 
         #X_vals =X*self.weights
@@ -161,9 +164,5 @@ class MyLogReg():
         '''
         predict classes
         '''
-        # feats = list(X.columns)
-        # X['x0']=1
-        # X = X[['x0']+feats]
-
         y_cap = self.predict_proba(X=X)
         return np.where(y_cap>threshold,1,0)
