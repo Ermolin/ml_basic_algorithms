@@ -148,14 +148,15 @@ class MyLogReg():
         predict probabilities
         '''
         #prep matrix
-        feats = list(X.columns)
-        X['x0']=1
-        X = X[['x0']+feats]
-        X=np.array(X)
+        X_in=X.copy()
+        feats = list(X_in.columns)
+        X_in['x0']=1
+        X_in = X_in[['x0']+feats]
+        X_in=np.array(X_in)
 
         #X_vals =X*self.weights
         #y_cap = 1 / (1+np.e ** (-X_vals.sum(axis=1)))
-        y_cap = 1 / (1 + np.exp(- self.weights @ X.T))
+        y_cap = 1 / (1 + np.exp(- self.weights @ X_in.T))
         return y_cap
     
     def predict(self,
