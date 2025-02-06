@@ -16,6 +16,7 @@ class MyLogReg():
             reg: str = None,
             l1_coef: float = None,
             l2_coef: float = None,
+            metric: str = None,
     ):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
@@ -25,6 +26,8 @@ class MyLogReg():
         self.reg = reg
         self.l1_coef = l1_coef
         self.l2_coef = l2_coef
+        self.metric = metric
+        self.best_score_val = None
 
     def __str__(self):
         return f'MyLogReg class: n_iter={self.n_iter}, learning_rate={self.learning_rate}'
@@ -88,6 +91,52 @@ class MyLogReg():
         antigradient = -( (errors_df.sum(axis=1) / X.shape[0] )) #- self.REGULARISATION(W=W)
         return antigradient
 
+    def get_class_score(
+            self,
+            y: np.array,
+            y_cap: np.array,
+            ):
+        TP = np.sum((y==1) & (y_cap==1))
+        TN = np.sum((y==0) & (y_cap==0))
+        FP = np.sum((y==0) & (y_cap==1))
+        FN = np.sum((y==1) & (y_cap==0))
+        return TP, TN, FP, FN
+
+    def best_score(
+            self,
+            X: np.array, # df with features
+            y: np.array, # Series with real values
+            ):
+        ''' get last score by choosen metric'''
+        y_cap = self.predict(X=X)
+        TP, TN, FP, FN = self.get_class_score(y=y, y_cap=y_cap)
+
+        if self.metric == 'accuracy':
+
+            self.best_score_val= (TP+TN)/(TP+TN+FP+FN)
+        elif self.metric == 'precision':
+            self.best_score_val= TP/(TP+FP)
+        elif self.metric == 'recall':
+            self.best_score_val= TP/(TP+FN)
+        elif self.metric == 'f1':
+            self.best_score_val= 2*TP/(2*TP+FP+FN)
+        elif self.metric == 'roc_auc':
+            y_score = self.predict_proba(X=X)
+            sorted_indices = np.argsort(-y_score)
+            y_true_sorted = y[sorted_indices]
+
+            pos = np.sum(y)
+            neg = len(y) - pos
+
+            cum_pos = np.cumsum(y_true_sorted)
+
+            self.best_score_val= np.sum(cum_pos[y_true_sorted == 0]) / (pos * neg)
+        else:
+            self.best_score_val= None
+
+    def get_best_score(self):
+        return self.best_score_val
+
     def fit(
             self,
             X: np.array, # df with features
@@ -104,6 +153,7 @@ class MyLogReg():
         self.weights = W
         # add w0 for X0 as array of 1
         # change types to np.array
+        X_df = X.copy()
         feats = list(X.columns)
         X['x0']=1
         X=np.array(X[['x0']+feats])
@@ -135,6 +185,8 @@ class MyLogReg():
             
             W = W + (antigradient * LR)
             self.weights = W
+
+            best_score_val = self.best_score(X=X_df, y=y)
         
     def get_coef(self):
         '''
