@@ -11,7 +11,7 @@ class MyLogReg():
             n_iter: int = 10,
             learning_rate: Union[float, Callable[[float],float]] = 0.1,
             weights: np.array = None,
-            random_state: int = None,
+            random_state: int = 42,
             sgd_sample: Union[float,int]= None,
             reg: str = None,
             l1_coef: float = None,
@@ -88,7 +88,7 @@ class MyLogReg():
         '''
         errors = y_cap-y
         errors_df = errors * X.transpose()
-        antigradient = -( (errors_df.sum(axis=1) / X.shape[0] )) #- self.REGULARISATION(W=W)
+        antigradient = -( (errors_df.sum(axis=1) / X.shape[0] )) - self.REGULARISATION(W=W)
         return antigradient
 
     def get_class_score(
