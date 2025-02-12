@@ -14,18 +14,20 @@ class MySVM():
             learning_rate: Union[float, Callable[[float],float]] = 0.001,
             weights: np.array = None,
             b: float = None,
+            C: float = 1. # soft-margin coef 
     ):
         self.n_iter = n_iter
         self.learning_rate = learning_rate
         self.weights = weights
         self.b = b
+        self.C = C
 
     def __str__(self):
         return f'MySVM class: n_iter={self.n_iter}, learning_rate={self.learning_rate}'
     
     def svm_loss(self, X, y):
         # hinge loss
-        loss = np.sum(np.maximum(0, 1 - y * (np.sum(X *  self.weights, axis=1) + self.b)))
+        loss = np.sum(np.maximum(0, 1 - self.C * y * (np.sum(X *  self.weights, axis=1) + self.b)))
         return loss
 
     def fit(
@@ -55,12 +57,12 @@ class MySVM():
                     mask = 1
                 
                 if mask == 1:
-                    margin_grad= 2*self.weights - (y_n* x_n)
+                    margin_grad= 2*self.weights - self.C *(y_n* x_n)
                 else:
                     margin_grad = 2*self.weights
                 
                 if mask ==1:
-                    eror_grad = - y_n
+                    eror_grad = - self.C * y_n
                 else:
                     eror_grad = 0
 
