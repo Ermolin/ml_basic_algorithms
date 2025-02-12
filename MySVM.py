@@ -28,26 +28,6 @@ class MySVM():
         loss = np.sum(np.maximum(0, 1 - y * (np.sum(X *  self.weights, axis=1) + self.b)))
         return loss
 
-
-
-    def margin_gradients_array(self, X, y_metric):
-        # gradient of hinge loss margin_gradient part
-        margin = (np.sum(X * self.weights ,axis=1) + self.b )* y_metric
-        margin_mask = np.array(np.where(margin >= 1, 0, 1))
-        
-        grad = (2*self.weights *y_metric.shape[0]   - np.sum(((y_metric* margin_mask)* X.T), axis=1)) /  y_metric.shape[0]
-
-        return grad
-
-    def error_gradients_array(self, X, y_metric):
-        # gradient of hinge loss error_gradient part
-        margin = (np.sum(X * self.weights ,axis=1) + self.b )* y_metric
-        margin_mask = np.array(np.where(margin >= 1, 0, 1))
-        
-        grad = (0 - np.sum(y_metric* margin_mask))  / y_metric.shape[0]
-        
-        return grad
-
     def fit(
             self,
             X: pd.DataFrame, # df with features
@@ -91,6 +71,12 @@ class MySVM():
             if verbose and (i+1)%verbose==0:
                 print(f'iteration {i+1} loss: {self.svm_loss(X, y)}, weights: {self.weights}, b: {self.b}')
 
-
     def get_coef(self):
         return (self.weights, self.b)
+    
+    def predict_proba(self, X: pd.DataFrame):
+        X_np = np.array(X)
+        return np.sign(np.sum(X_np *  self.weights, axis=1) + self.b)
+    
+    def predict(self, X: pd.DataFrame):
+        return np.where(self.predict_proba(X) == 1, 1, 0)
